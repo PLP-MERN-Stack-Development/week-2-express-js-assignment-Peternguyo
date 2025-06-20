@@ -1,63 +1,138 @@
-[![Open in Visual Studio Code](https://classroom.github.com/assets/open-in-vscode-2e0aaae1b6195c2367325f4f02e2d04e9abb55f0b24a779b69b11b9e10269abc.svg)](https://classroom.github.com/online_ide?assignment_repo_id=19772431&assignment_repo_type=AssignmentRepo)
 # Express.js RESTful API Assignment
 
-This assignment focuses on building a RESTful API using Express.js, implementing proper routing, middleware, and error handling.
+This repository contains a RESTful API for managing product data, built with Express.js.
 
-## Assignment Overview
+## Setup Instructions
 
-You will:
-1. Set up an Express.js server
-2. Create RESTful API routes for a product resource
-3. Implement custom middleware for logging, authentication, and validation
-4. Add comprehensive error handling
-5. Develop advanced features like filtering, pagination, and search
+1.  **Clone the repository:**
+    ```bash
+    git clone YOUR_REPO_URL
+    cd your-repo-name
+    ```
 
-## Getting Started
+2.  **Initialize Node.js Project:**
+    ```bash
+    npm init -y
+    ```
+    Add a `start` script to your `package.json` under the `"scripts"` section:
+    ```json
+    "scripts": {
+      "start": "node server.js"
+    },
+    ```
 
-1. Accept the GitHub Classroom assignment invitation
-2. Clone your personal repository that was created by GitHub Classroom
-3. Install dependencies:
-   ```
-   npm install
-   ```
-4. Run the server:
-   ```
-   npm start
-   ```
+3.  **Install Dependencies:**
+    ```bash
+    npm install express uuid
+    ```
+    *(Note: `body-parser` is no longer needed as `express.json()` is used.)*
 
-## Files Included
+4.  **Create `.env` file (for API Key):**
+    Create a file named `.env` in the root of your project and add your secret API key:
+    ```
+    API_KEY=mysecretapikey123
+    ```
+    *(You'll also create a `.env.example` as required by the assignment, with `API_KEY=your_secret_key_here`)*
 
-- `Week2-Assignment.md`: Detailed assignment instructions
-- `server.js`: Starter Express.js server file
-- `.env.example`: Example environment variables file
+5.  **Start the Server:**
+    ```bash
+    npm start
+    ```
+    The server will start on `http://localhost:3000`.
 
-## Requirements
+## API Endpoints Documentation
 
-- Node.js (v18 or higher)
-- npm or yarn
-- Postman, Insomnia, or curl for API testing
+### 1. GET /api/products
 
-## API Endpoints
+* **Description:** Retrieves a list of all products. Supports filtering by category, searching by name, and pagination.
+* **Request Headers:**
+    * `x-api-key`: `mysecretapikey123` (Required for authentication)
+* **Query Parameters (Optional):**
+    * `category`: Filter products by category (e.g., `?category=electronics`)
+    * `search`: Search products by name (case-insensitive, e.g., `?search=phone`)
+    * `page`: Current page number for pagination (default: 1)
+    * `limit`: Number of items per page for pagination (default: 10)
+* **Success Response (200 OK):**
+    ```json
+    {
+      "totalProducts": 3,
+      "currentPage": 1,
+      "totalPages": 1,
+      "products": [
+        {
+          "id": "1",
+          "name": "Laptop",
+          "description": "High-performance laptop with 16GB RAM",
+          "price": 1200,
+          "category": "electronics",
+          "inStock": true
+        },
+        // ... more products
+      ]
+    }
+    ```
+* **Error Responses:**
+    * `401 Unauthorized`: If `x-api-key` is missing or invalid.
+        ```json
+        {
+          "error": {
+            "message": "Unauthorized: Invalid or missing API Key.",
+            "type": "UnauthorizedError"
+          }
+        }
+        ```
+* **Example `curl` Request:**
+    ```bash
+    curl -H "x-api-key: mysecretapikey123" "http://localhost:3000/api/products?category=electronics&search=laptop"
+    ```
 
-The API will have the following endpoints:
+### 2. GET /api/products/:id
 
-- `GET /api/products`: Get all products
-- `GET /api/products/:id`: Get a specific product
-- `POST /api/products`: Create a new product
-- `PUT /api/products/:id`: Update a product
-- `DELETE /api/products/:id`: Delete a product
+* **Description:** Retrieves a single product by its unique ID.
+* **Request Headers:**
+    * `x-api-key`: `mysecretapikey123` (Required)
+* **Success Response (200 OK):**
+    ```json
+    {
+      "id": "1",
+      "name": "Laptop",
+      "description": "High-performance laptop with 16GB RAM",
+      "price": 1200,
+      "category": "electronics",
+      "inStock": true
+    }
+    ```
+* **Error Responses:**
+    * `401 Unauthorized`: Invalid API Key.
+    * `404 Not Found`: If product with the given ID does not exist.
+        ```json
+        {
+          "error": {
+            "message": "Product not found.",
+            "type": "NotFoundError"
+          }
+        }
+        ```
+* **Example `curl` Request:**
+    ```bash
+    curl -H "x-api-key: mysecretapikey123" "http://localhost:3000/api/products/1"
+    ```
 
-## Submission
+... (continue for POST, PUT, DELETE, /api/products/stats) ...
 
-Your work will be automatically submitted when you push to your GitHub Classroom repository. Make sure to:
+## Middleware Implemented
 
-1. Complete all the required API endpoints
-2. Implement the middleware and error handling
-3. Document your API in the README.md
-4. Include examples of requests and responses
+* **Request Logger:** Logs the request method, URL, and timestamp for every incoming request.
+* **JSON Body Parser:** `express.json()` is used to parse JSON payloads from incoming requests, making them available in `req.body`.
+* **Authentication Middleware:** Checks for an `x-api-key` header. If invalid or missing, it prevents further processing and returns a `401 UnauthorizedError`.
+* **Validation Middleware:** `validateProduct` ensures that `POST /api/products` and `PUT /api/products/:id` requests contain valid data (e.g., required fields, correct data types), returning a `400 ValidationError` if invalid.
 
-## Resources
+## Error Handling
 
-- [Express.js Documentation](https://expressjs.com/)
-- [RESTful API Design Best Practices](https://restfulapi.net/)
-- [HTTP Status Codes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status) 
+* **Global Error Handling:** A comprehensive error handling middleware is implemented at the end of `server.js` to catch all errors (thrown manually or implicitly). It logs the error stack and sends a standardized JSON error response with appropriate HTTP status codes and messages.
+* **Custom Error Classes:**
+    * `NotFoundError (404)`: Used when a requested resource is not found.
+    * `ValidationError (400)`: Used when request data is invalid.
+    * `UnauthorizedError (401)`: Used when authentication fails.
+
+---
